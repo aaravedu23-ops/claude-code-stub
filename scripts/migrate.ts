@@ -4,10 +4,16 @@
  */
 import "dotenv/config";
 import { execSync } from "node:child_process";
-import { directDatabaseUrl } from "../lib/database-url";
+import { databaseVariableNames, directDatabaseUrl } from "../lib/database-url";
 
 const url = directDatabaseUrl();
 if (!url) {
+  const names = databaseVariableNames();
+  console.error(
+    names.length
+      ? `Database-related variables found, but none holds a postgres:// URL: ${names.join(", ")}`
+      : "No database-related environment variables were found at all.",
+  );
   console.error(`
 ──────────────────────────────────────────────────────────────
  No database is connected, so the build can't create tables.
