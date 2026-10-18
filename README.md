@@ -9,19 +9,22 @@ An expense tracker for receipts and returns. You can:
 - See personalized monthly insights in the app, and get them by email on the 1st.
 - Sign up with an email and password, or with Google. Forgotten passwords are reset with a 6-digit code sent by email.
 
-Built with Next.js 16, TypeScript, Tailwind v4, shadcn/ui (Base UI), Prisma + SQLite, Better Auth, Resend, and Claude for reading receipts.
+Built with Next.js 16, TypeScript, Tailwind v4, shadcn/ui (Base UI), Prisma + Postgres, Better Auth, Resend, and Claude for reading receipts.
 
 ## Run it locally
 
 ```bash
 npm install
-cp .env.example .env      # then set BETTER_AUTH_SECRET (npx @better-auth/cli secret)
-npx prisma migrate dev    # creates dev.db
-npm run dev               # http://localhost:3000
+cp .env.example .env        # set DATABASE_URL and BETTER_AUTH_SECRET (npx @better-auth/cli secret)
+npx prisma migrate deploy   # creates the tables
+npm run dev                 # http://localhost:3000
 ```
 
-npm 11 blocks install scripts by default. If `better-sqlite3` or Prisma fail to load, run
-`npm install-scripts approve better-sqlite3 prisma @prisma/engines` and then `npm rebuild`.
+`DATABASE_URL` can be your Neon database's URL, or a throwaway local Postgres from `npx prisma dev`
+(it prints the URL to use).
+
+npm 11 blocks install scripts by default. If Prisma fails to load, run
+`npm install-scripts approve prisma @prisma/engines` and then `npm rebuild`.
 
 To fill an account with four months of sample data:
 
@@ -52,12 +55,17 @@ Requests opt into server-side refusal fallbacks (`fallbacks: "default"`).
 `Authorization: Bearer $CRON_SECRET`. Each user gets each month once, so re-running it is safe. Settings → "Send
 last month's report now" sends one on demand.
 
-## Deploying
+## Deploying to Vercel
 
-SQLite lives on local disk, which serverless hosts like Vercel don't keep. Before deploying there, move to a hosted
-database: Turso/libSQL with `@prisma/adapter-libsql`, or Postgres with `@prisma/adapter-pg`. Change
-`provider` in `prisma/schema.prisma` and the adapter in `lib/db.ts`. Receipt photos are stored in the database as
-downscaled JPEGs. At scale, move them to blob storage.
+1. Import the GitHub repo in Vercel.
+2. In the project, open **Storage → Create Database → Neon** and connect it to the project. This sets
+   `DATABASE_URL` and `DATABASE_URL_UNPOOLED`.
+3. In **Settings → Environment Variables**, add `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, `CRON_SECRET`,
+   and optionally `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. `BETTER_AUTH_URL` can be left
+   unset; the production domain is used.
+4. Redeploy. Each build runs `prisma migrate deploy` before `next build`, so the tables are created automatically.
+
+Receipt photos are stored in the database as downscaled JPEGs. At scale, move them to blob storage.
 
 ## Where things are
 
