@@ -1,0 +1,152 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-display);
+  --color-refund: var(--refund);
+  --color-refund-wash: var(--refund-wash);
+  --color-carbon-wash: var(--carbon-wash);
+  --color-carbon-deep: var(--carbon-deep);
+  --color-warn: var(--warn);
+  --color-warn-wash: var(--warn-wash);
+  --shadow-raise: 0 1px 1px rgb(23 32 51 / 0.04), 0 2px 6px -2px rgb(23 32 51 / 0.08);
+  --shadow-float: 0 1px 2px rgb(23 32 51 / 0.06), 0 10px 24px -10px rgb(30 44 120 / 0.22), 0 28px 56px -28px rgb(30 44 120 / 0.18);
+  --shadow-card: 0 1px 1px rgb(23 32 51 / 0.08), 0 6px 14px -6px rgb(23 32 51 / 0.35), 0 18px 32px -18px rgb(30 44 120 / 0.35);
+  --ease-spring: cubic-bezier(0.32, 1.25, 0.5, 1);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Stub tokens: thermal-paper whites, ballpoint ink, carbon-copy blue. */
+:root {
+  --background: #F4F5F7;
+  --foreground: #172033;
+  --card: #FFFFFF;
+  --card-foreground: #172033;
+  --popover: #FFFFFF;
+  --popover-foreground: #172033;
+  --primary: #2F45C5;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E9EBF0;
+  --secondary-foreground: #172033;
+  --muted: #EDEFF3;
+  --muted-foreground: #5E6675;
+  --accent: #EBEEF8;
+  --accent-foreground: #172033;
+  --destructive: #C2362B;
+  --border: #E1E4EA;
+  --input: #D3D8E0;
+  --ring: #2F45C5;
+  --radius: 0.75rem;
+
+  --refund: #0F7A58;
+  --refund-wash: #E3F2EB;
+  --carbon-wash: #E8EBFA;
+  --carbon-deep: #2537A3;
+  --warn: #B4471E;
+  --warn-wash: #FBEDE6;
+  --paper-edge: #E7E9EE;
+
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #172033;
+  --sidebar-primary: #2F45C5;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EBEEF8;
+  --sidebar-accent-foreground: #172033;
+  --sidebar-border: #E1E4EA;
+  --sidebar-ring: #2F45C5;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+@layer base {
+  body {
+    font-feature-settings: "ss01", "cv11";
+    line-height: 1.6;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.03em;
+    line-height: 1.08;
+    font-weight: 500;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.55; cursor: pointer; }
+}
+
+@layer utilities {
+  /* Lining figures. This face's tabular set spaces out commas and points. */
+  .num { font-variant-numeric: lining-nums; }
+  /* Torn receipt edge: a zigzag mask along the bottom. */
+  .receipt-edge {
+    --tooth: 10px;
+    mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / var(--tooth) 100%;
+    padding-bottom: calc(var(--tooth) / 2 + 1rem);
+  }
+  .paper-grain {
+    background-image:
+      radial-gradient(60rem 30rem at 15% -10%, rgb(47 69 197 / 0.10), transparent 60%),
+      radial-gradient(50rem 26rem at 95% 10%, rgb(27 175 122 / 0.07), transparent 60%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.09  0 0 0 0 0.12  0 0 0 0 0.2  0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

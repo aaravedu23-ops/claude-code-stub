@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------- Auth (Better Auth) ----------
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  monthlyEmails Boolean   @default(true)
+
+  sessions     Session[]
+  accounts     Account[]
+  categories   Category[]
+  cards        PaymentCard[]
+  transactions Transaction[]
+  reports      MonthlyReport[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ---------- Stub ----------
+
+model Category {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  color     String
+  icon      String
+  /// Monthly budget in cents. Null means no budget.
+  budget    Int?
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  transactions Transaction[]
+
+  @@unique([userId, name])
+}
+
+model PaymentCard {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nickname   String
+  issuer     String
+  network    String
+  /// Only the last four digits are ever stored.
+  last4      String
+  holderName String?
+  expMonth   Int?
+  expYear    Int?
+  color      String
+  archived   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "purchase" or "refund"
+  kind         String       @default("purchase")
+  /// Always positive, in cents. Refunds subtract from spend.
+  amount       Int
+  merchant     String
+  date         DateTime
+  note         String?
+  /// JSON array of { name, amount } line items read from a receipt.
+  items        String?
+  /// Downscaled JPEG data URL of the receipt photo.
+  receiptImage String?
+  categoryId   String?
+  category     Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  cardId       String?
+  card         PaymentCard? @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  /// For refunds: the purchase being returned.
+  originalId   String?
+  original     Transaction? @relation("Refunds", fields: [originalId], references: [id], onDelete: SetNull)
+  refunds      Transaction[] @relation("Refunds")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([userId, date])
+  @@index([originalId])
+}
+
+model MonthlyReport {
+  id     String   @id @default(cuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// e.g. "2026-09"
+  month  String
+  sentAt DateTime @default(now())
+
+  @@unique([userId, month])
+}
