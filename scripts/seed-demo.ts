@@ -12,6 +12,7 @@ import { hashPassword } from "better-auth/crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../lib/generated/prisma/client";
 import { DEFAULT_CATEGORIES } from "../lib/catalog";
+import { pooledDatabaseUrl } from "../lib/database-url";
 
 const email = process.argv[2];
 const password = process.argv[3] ?? "stub-demo-123";
@@ -21,7 +22,7 @@ if (!email) {
 }
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+  adapter: new PrismaPg({ connectionString: pooledDatabaseUrl() }),
 });
 
 // Deterministic pseudo-random so reruns look the same.
