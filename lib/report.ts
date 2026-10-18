@@ -1,10 +1,10 @@
 import "server-only";
+import { appUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/db";
 import { emailShell, sendEmail } from "@/lib/email";
 import { money, monthKey, monthLabel } from "@/lib/format";
 import { getMonthInsights } from "@/lib/insights";
 
-const appUrl = () => process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);

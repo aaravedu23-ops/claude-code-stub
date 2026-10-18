@@ -3,6 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { emailOTP } from "better-auth/plugins/email-otp";
 import { prisma } from "@/lib/db";
+import { appUrl, vercelOrigins } from "@/lib/app-url";
 import { emailShell, sendEmail } from "@/lib/email";
 
 export const googleEnabled = Boolean(
@@ -12,7 +13,9 @@ export const googleEnabled = Boolean(
 export const MIN_PASSWORD_LENGTH = 8;
 
 export const auth = betterAuth({
-  database: prismaAdapter(prisma, { provider: "sqlite" }),
+  baseURL: appUrl(),
+  trustedOrigins: vercelOrigins(),
+  database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
     minPasswordLength: MIN_PASSWORD_LENGTH,

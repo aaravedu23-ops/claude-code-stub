@@ -99,7 +99,12 @@ export async function listMonthTxns(
       ...(filters.categoryId ? { categoryId: filters.categoryId === "none" ? null : filters.categoryId } : {}),
       ...(filters.cardId ? { cardId: filters.cardId === "none" ? null : filters.cardId } : {}),
       ...(filters.kind === "purchase" || filters.kind === "refund" ? { kind: filters.kind } : {}),
-      ...(filters.q ? { OR: [{ merchant: { contains: filters.q } }, { note: { contains: filters.q } }] } : {}),
+      ...(filters.q ? {
+            OR: [
+              { merchant: { contains: filters.q, mode: "insensitive" as const } },
+              { note: { contains: filters.q, mode: "insensitive" as const } },
+            ],
+          } : {}),
     },
     take,
   );

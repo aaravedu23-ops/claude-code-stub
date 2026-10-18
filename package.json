@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
@@ -14,7 +14,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
     "@base-ui/react": "^1.9.0",
-    "@prisma/adapter-better-sqlite3": "^7.10.1",
+    "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "better-auth": "^1.7.10",
     "class-variance-authority": "^0.7.1",
@@ -24,6 +24,7 @@
     "lucide-react": "^1.59.0",
     "next": "16.4.2",
     "next-themes": "^0.4.6",
+    "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "resend": "^6.34.1",
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^18.0.8",
@@ -48,7 +50,6 @@
     "typescript": "^5"
   },
   "allowScripts": {
-    "better-sqlite3@12.11.1": true,
     "prisma@7.10.1": true,
     "@prisma/engines@7.10.1": true,
     "unrs-resolver@1.12.2": true
