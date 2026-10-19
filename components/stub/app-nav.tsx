@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CreditCard, LayoutGrid, LogOut, Plus, ReceiptText, Settings, Shapes } from "lucide-react";
+import { BarChart3, CreditCard, FileUp, LayoutGrid, LogOut, Plus, ReceiptText, Settings, Shapes } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/logo";
@@ -14,6 +14,7 @@ const items = [
   { href: "/cards", label: "Cards", icon: CreditCard },
   { href: "/categories", label: "Categories", icon: Shapes },
   { href: "/insights", label: "Insights", icon: BarChart3 },
+  { href: "/import", label: "Import", icon: FileUp },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

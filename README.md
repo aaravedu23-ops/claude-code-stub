@@ -4,6 +4,8 @@ An expense tracker for receipts and returns. You can:
 
 - Scan a receipt to fill in the store, date, total, card and category. Every field stays editable before and after saving.
 - Log purchases and returns. A return links to the purchase it came from, and the money comes off that category and card.
+- Import a bank or card statement (PDF, CSV or Excel). Every row is checked against receipts, entries added by hand and
+  earlier imports, so the same purchase or return is never counted twice. Returns on a statement link to their purchase.
 - Save cards once (a nickname and the last 4 digits only), then pick one when you log an expense.
 - Use the default categories, edit them, or add your own with an icon, color and optional monthly budget.
 - See personalized monthly insights in the app, and get them by email on the 1st.
@@ -43,6 +45,7 @@ Leave a key empty in `.env` and the app falls back to a local option.
 | Google sign-in | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | The Google button is hidden; email and password still work |
 | Email (password reset codes, monthly reports) | `RESEND_API_KEY`, `EMAIL_FROM` | Emails print to the server console |
 | Receipt scanning with Claude | `ANTHROPIC_API_KEY`, `RECEIPT_MODEL` | Scanning uses on-device OCR (Tesseract), which is less accurate |
+| PDF statements read by Claude | `ANTHROPIC_API_KEY`, `STATEMENT_MODEL` (defaults to `RECEIPT_MODEL`) | PDFs are read from their text layer, which works for most bank PDFs but not scans. CSV and Excel never need a key |
 | Monthly report job | `CRON_SECRET` | `/api/cron/monthly` refuses requests |
 
 **Google OAuth:** create a Web client at console.cloud.google.com → APIs & Services → Credentials. Add
@@ -75,3 +78,7 @@ Receipt photos are stored in the database as downscaled JPEGs. At scale, move th
 - `lib/actions.ts`: server actions for every change, each checked against the signed-in user.
 - `lib/insights.ts`: the monthly insight rules. `lib/report.ts` turns them into the email.
 - `app/api/receipts/scan/route.ts`: Claude receipt extraction. `lib/ocr.ts` is the on-device fallback.
+- `app/(app)/import` and `components/stub/statement-import.tsx`: statement upload and the review screen. CSV and Excel
+  files are read in the browser; PDFs go to `app/api/statements/parse/route.ts`.
+- `lib/statement.ts`: column detection, date and amount parsing, store-name cleanup. `lib/statement-match.ts`: the
+  duplicate check and return linking. Imported rows store a fingerprint (`importKey`), so re-importing a statement skips them.

@@ -137,9 +137,14 @@ model Transaction {
   originalId   String?
   original     Transaction? @relation("Refunds", fields: [originalId], references: [id], onDelete: SetNull)
   refunds      Transaction[] @relation("Refunds")
+  /// "manual", "receipt" or "statement"
+  source       String       @default("manual")
+  /// Fingerprint of the statement row this came from, so importing the same statement again skips it.
+  importKey    String?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
+  @@unique([userId, importKey])
   @@index([userId, date])
   @@index([originalId])
 }

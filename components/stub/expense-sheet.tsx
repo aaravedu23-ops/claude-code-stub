@@ -16,12 +16,15 @@ import {
   deleteTransaction,
   getReceiptImage,
   listReturnablePurchases,
+  mergeReceiptInto,
   updateTransaction,
+  type DuplicateHint,
 } from "@/lib/actions";
 import { CATEGORY_COLORS } from "@/lib/catalog";
 import { centsToInput, dateToInput, money } from "@/lib/format";
 import { downscaleImage } from "@/lib/image";
 import type { ScanResult } from "@/lib/receipt-types";
+import { merchantsMatch } from "@/lib/statement";
 import type { CardOption, CategoryOption, EditableTxn, ReturnablePurchase } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -130,6 +133,7 @@ function ExpenseForm({
   onDone: () => void;
 }) {
   const router = useRouter();
+  const { open } = useExpenseSheet();
   const editing = opts.mode === "edit" ? opts.txn : null;
   const fromPurchase = opts.mode === "return" ? opts.purchase : null;
 
@@ -156,6 +160,7 @@ function ExpenseForm({
   const [scan, setScan] = useState<ScanState>({ status: "idle" });
   const [purchases, setPurchases] = useState<ReturnablePurchase[] | null>(fromPurchase ? [fromPurchase] : null);
   const [error, setError] = useState<string | null>(null);
+  const [duplicate, setDuplicate] = useState<DuplicateHint | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -168,8 +173,9 @@ function ExpenseForm({
   }, [editing]);
 
   useEffect(() => {
-    if (isRefund && purchases === null) listReturnablePurchases().then(setPurchases);
-  }, [isRefund, purchases]);
+    // Keep the purchase this return is linked to in the list, even if it's fully returned or older.
+    if (isRefund && purchases === null) listReturnablePurchases(editing?.originalId).then(setPurchases);
+  }, [isRefund, purchases, editing]);
 
   // Opened from "Scan receipt": go straight to the file picker.
   useEffect(() => {
@@ -260,13 +266,15 @@ function ExpenseForm({
     }
     if (r.items.length) setItems(r.items);
 
-    // A return slip: link it to the most recent matching purchase if there's an obvious one.
+    // A return slip: link it to the matching purchase if there's an obvious one,
+    // preferring one for exactly the same amount, then the most recent.
     if (r.kind === "refund" && r.merchant) {
       const link = (list: ReturnablePurchase[]) => {
         const cents = r.amount ? Math.round(Number(r.amount) * 100) : 0;
-        const match = list.find(
-          (p) => p.merchant.toLowerCase() === r.merchant.toLowerCase() && (!cents || p.remaining >= cents),
+        const candidates = list.filter(
+          (p) => merchantsMatch(p.merchant, r.merchant) && (!cents || p.remaining >= cents) && (!r.date || p.date <= r.date),
         );
+        const match = candidates.find((p) => cents && p.remaining === cents) ?? candidates[0];
         if (match) {
           setOriginalId(match.id);
           setCategoryId((c) => c ?? match.categoryId);
@@ -283,10 +291,8 @@ function ExpenseForm({
     setScan({ status: "done", filled, via: r.source });
   }
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    const input = {
+  function formInput() {
+    return {
       kind,
       amount,
       merchant,
@@ -298,16 +304,35 @@ function ExpenseForm({
       items,
       receiptImage: receipt,
     };
+  }
+
+  /** `how`: a normal save (checks for duplicates), save even though it looks logged, or add the receipt to the logged entry. */
+  function save(how: "check" | "anyway" | "merge") {
+    setError(null);
+    const input = formInput();
     startTransition(async () => {
-      const res = editing ? await updateTransaction(editing.id, input) : await createTransaction(input);
+      const res = editing
+        ? await updateTransaction(editing.id, input)
+        : how === "merge" && duplicate
+          ? await mergeReceiptInto(duplicate.id, input)
+          : await createTransaction(input, { allowDuplicate: how === "anyway" });
       if (!res.ok) {
-        setError(res.error);
+        if (res.duplicate) setDuplicate(res.duplicate);
+        else setError(res.error);
         return;
       }
-      toast.success(editing ? "Changes saved" : isRefund ? "Return saved" : "Expense saved");
+      toast.success(
+        editing ? "Changes saved" : how === "merge" ? "Receipt added to the existing entry" : isRefund ? "Return saved" : "Expense saved",
+      );
       onDone();
       router.refresh();
     });
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setDuplicate(null);
+    save("check");
   }
 
   function remove() {
@@ -517,12 +542,48 @@ function ExpenseForm({
             {error}
           </p>
         ) : null}
+        {duplicate ? (
+          <DuplicateNotice
+            duplicate={duplicate}
+            canMerge={!!receipt}
+            pending={pending}
+            onMerge={() => save("merge")}
+            onSaveAnyway={() => save("anyway")}
+            onDismiss={() => setDuplicate(null)}
+          />
+        ) : null}
+        {editing && editing.kind === "purchase" && editing.amount > editing.refundedTotal && !confirmDelete ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() =>
+              open({
+                mode: "return",
+                purchase: {
+                  id: editing.id,
+                  merchant: editing.merchant,
+                  amount: editing.amount,
+                  remaining: editing.amount - editing.refundedTotal,
+                  date: editing.date,
+                  categoryId: editing.categoryId,
+                  cardId: editing.cardId,
+                },
+              })
+            }
+          >
+            <Undo2 />
+            Record a return for this purchase
+          </Button>
+        ) : null}
         <div className="flex items-center gap-2">
           {editing ? (
             confirmDelete ? (
               <div className="mr-auto flex items-center gap-1.5">
                 <Button type="button" variant="destructive" size="sm" onClick={remove} disabled={pending}>
-                  Delete for good
+                  {editing.kind === "purchase" && editing.refundCount > 0
+                    ? `Delete with its ${editing.refundCount === 1 ? "return" : `${editing.refundCount} returns`}`
+                    : "Delete for good"}
                 </Button>
                 <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
                   Keep it
@@ -547,6 +608,54 @@ function ExpenseForm({
         </div>
       </SheetFooter>
     </form>
+  );
+}
+
+const DUPLICATE_SOURCE: Record<string, string> = {
+  statement: "from your bank statement",
+  receipt: "from a receipt",
+  manual: "",
+};
+
+/** Shown when a new entry matches one already logged, so the same purchase isn't counted twice. */
+function DuplicateNotice({
+  duplicate: d,
+  canMerge,
+  pending,
+  onMerge,
+  onSaveAnyway,
+  onDismiss,
+}: {
+  duplicate: DuplicateHint;
+  canMerge: boolean;
+  pending: boolean;
+  onMerge: () => void;
+  onSaveAnyway: () => void;
+  onDismiss: () => void;
+}) {
+  const when = new Date(`${d.date}T12:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const from = DUPLICATE_SOURCE[d.source] ?? "";
+  return (
+    <div role="alert" className="rounded-xl border border-warn/25 bg-warn-wash p-3 text-sm">
+      <p className="font-medium text-warn">This looks like it&apos;s already logged</p>
+      <p className="mt-0.5 text-foreground/80">
+        {d.merchant} on {when}, {money(d.amount)}
+        {from ? ` ${from}` : ""}. Saving again would count it twice.
+      </p>
+      <div className="mt-2.5 flex flex-wrap gap-1.5">
+        {canMerge && !d.hasReceipt ? (
+          <Button type="button" size="sm" onClick={onMerge} disabled={pending}>
+            Add receipt to that entry
+          </Button>
+        ) : null}
+        <Button type="button" size="sm" variant="outline" className="bg-card" onClick={onSaveAnyway} disabled={pending}>
+          It&apos;s a different one, save it
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onDismiss} disabled={pending}>
+          Go back
+        </Button>
+      </div>
+    </div>
   );
 }
 

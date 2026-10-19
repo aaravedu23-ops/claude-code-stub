@@ -1,9 +1,12 @@
+import { FileUp } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { ExpenseFilters } from "@/components/stub/expense-filters";
 import { AddExpenseButton, ScanReceiptButton } from "@/components/stub/expense-sheet";
 import { MonthSwitcher, PageBody, PageHeader, Panel } from "@/components/stub/page-header";
 import { TxnList } from "@/components/stub/txn-list";
+import { buttonVariants } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
 import { dayLabel, money, monthLabel, parseMonthKey } from "@/lib/format";
 import { listMonthTxns, type ListedTxn } from "@/lib/queries";
@@ -53,6 +56,10 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
         }
         actions={
           <>
+            <Link href="/import" className={buttonVariants({ variant: "outline", className: "bg-card" })}>
+              <FileUp />
+              Import statement
+            </Link>
             <ScanReceiptButton />
             <AddExpenseButton />
           </>
@@ -78,7 +85,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
             <p className="mt-1 text-sm text-muted-foreground">
               {Object.values(filters).some(Boolean)
                 ? "Try another month or clear the filters."
-                : "Scan a receipt or add one by hand and it will show up here."}
+                : "Scan a receipt, add one by hand, or import a bank statement and it will show up here."}
             </p>
           </div>
         </Panel>
