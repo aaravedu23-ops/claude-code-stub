@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Newsreader, Schibsted_Grotesk } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {children}
         <Toaster position="bottom-center" />
+        <Analytics />
       </body>
     </html>
   );
